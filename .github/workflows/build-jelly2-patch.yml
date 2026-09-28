@@ -19,14 +19,16 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null
 
       - name: Install required Android SDK and NDK packages
         run: |
-          sdkmanager "platforms;android-28" "build-tools;30.0.3" "ndk;21.3.6528147"
+          sdkmanager "platform-tools" "platforms;android-28" "build-tools;30.0.3" "ndk;21.3.6528147"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/21.3.6528147" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/21.3.6528147" >> "$GITHUB_ENV"
 
-      - name: Set up Java 11 for Gradle/AGP 7.1.3
+      - name: Set up Java 11 for Gradle and AGP
         uses: actions/setup-java@v5
         with:
           distribution: temurin
