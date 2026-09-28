@@ -154,6 +154,34 @@ class VirtualSerialDriver(val context: Context, private val prefs: MainPreferenc
         return ""
     }
 
+    private fun stopSerialIoAndClosePort() {
+        val manager = serialInputManager
+        manager?.stop()
+
+        try {
+            if (port?.isOpen == true) {
+                port?.close()
+            }
+        } catch (e: Exception) {
+            logger.log(this) { "Exception while closing serial port ${e.message}" }
+        }
+
+        if (manager != null) {
+            val deadline = System.currentTimeMillis() + 1500
+            while (manager.state != SerialInputOutputManager.State.STOPPED && System.currentTimeMillis() < deadline) {
+                try {
+                    Thread.sleep(10)
+                } catch (_: InterruptedException) {
+                    break
+                }
+            }
+        }
+
+        serialInputManager = null
+        port = null
+        connection = null
+    }
+
     override fun onDataReceived(data: SerialData?) {
         try {
             data?.apply {
@@ -165,9 +193,7 @@ class VirtualSerialDriver(val context: Context, private val prefs: MainPreferenc
                         if (selectedDevice == null) return
                     }
 
-                    if (port?.isOpen == true) {
-                        port?.close()
-                    }
+                    stopSerialIoAndClosePort()
                     connection = usbManager.openDevice(selectedDevice?.device)
                     port = selectedDevice!!.ports.first()
 
@@ -193,7 +219,7 @@ class VirtualSerialDriver(val context: Context, private val prefs: MainPreferenc
                     try {
                         port?.write(data.serialData, 5000)
                     } catch (e: Exception) {
-                        port?.close()
+                        stopSerialIoAndClosePort()
                     }
                 }
             }
